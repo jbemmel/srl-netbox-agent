@@ -1,0 +1,40 @@
+module netbox-agent {
+
+    yang-version "1";
+
+    // namespace
+    namespace "urn:srl_test/netbox-agent";
+
+    prefix "netbox_agent";
+
+    revision "2021-10-27" {
+        description "Initial revision";
+        reference "TBD";
+    }
+
+    grouping netbox-agent-top {
+        description "Top level grouping for Netbox agent sample app";
+
+        container netbox-agent {
+            presence "presence container";
+
+            description "Top level enclosing container for netbox agent sample app
+                         config and operational state data";
+
+            leaf netbox-url {
+              description "URL for Netbox server";
+              mandatory true;
+              type string;
+            }
+
+            leaf netbox-token {
+              description "Security token to use with Netbox server";
+              mandatory true;
+              type string;
+            }
+        }
+    }
+
+    // data definition statements
+    uses netbox-agent-top;
+}

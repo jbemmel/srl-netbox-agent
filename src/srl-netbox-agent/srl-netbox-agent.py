@@ -11,9 +11,13 @@ import signal
 import traceback
 import json
 
+import requests, urllib3, pynetbox
+
 import sdk_service_pb2
 import sdk_service_pb2_grpc
 import config_service_pb2
+
+from pygnmi.client import gNMIclient
 
 from logging.handlers import RotatingFileHandler
 
@@ -88,22 +92,93 @@ def Handle_Notification(obj, state):
                    state.netbox_url = data['netbox_url']['value']
                 if 'netbox_token' in data:
                    state.netbox_token = data['netbox_token']['value']
+                if 'netbox_user' in data:
+                   state.netbox_user = data['netbox_user']['value']
+                if 'netbox_password' in data:
+                   state.netbox_password = data['netbox_password']['value']
                 return True
         elif obj.config.key.js_path == ".commit.end":
-           logging.info( "TODO Connect to Netbox and commit" )
+           logging.info( "Connect to Netbox and commit" )
+           RegisterWithNetbox(state)
     else:
         logging.info(f"Unexpected notification : {obj}")
 
     # dont subscribe to LLDP now
     return False
 
+#
+# Uses gNMI to get /platform/chassis/mac-address and format as hhhh.hhhh.hhhh
+#
+def GetSystemMAC():
+   path = '/platform/chassis/mac-address'
+   with gNMIclient(target=('unix:///opt/srlinux/var/run/sr_gnmi_server',57400),
+                            username="admin",password="admin",
+                            insecure=True, debug=False) as gnmi:
+      result = gnmi.get( encoding='json_ietf', path=[path] )
+      for e in result['notification']:
+         if 'update' in e:
+           logging.info(f"GetSystemMAC GOT Update :: {e['update']}")
+           m = e['update'][0]['val'] # aa:bb:cc:dd:ee:ff
+           return f'{m[0]}{m[1]}.{m[2]}{m[3]}.{m[4]}{m[5]}'
+
+   return "0000.0000.0000"
+
+def GetNetboxToken(state):
+    if state.netbox_token != "":
+        return state.netbox_token
+    response = requests.post(f'{state.netbox_url}/api/users/tokens/provision/',
+                             data = { "username": state.netbox_user, "password": state.netbox_password },
+                             headers = { "Content-Type": "application/json",
+                                         "Accept": "application/json" } )
+    return response.json()['key']
+
+def RegisterWithNetbox(state):
+    nb = pynetbox.api( url=state.netbox_url, token=GetNetboxToken(state) )
+    # if ssl_verify is False:
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    session = requests.Session()
+    session.verify = False
+    nb.http_session = session
+
+    new_chassis = nb.dcim.devices.create(
+      name=socket.gethostname(),
+      # See https://github.com/netbox-community/devicetype-library/blob/master/device-types/Nokia/7210-SAS-Sx.yaml
+      device_type="7210 SAS-Sx 10/100GE",  # Needs to exist in Netbox
+      serial=GetSystemMAC(),
+      device_role=state.role,
+      site=None,
+      tenant=None,
+      rack=None,
+      tags=[],
+    )
+
+    # TODO use LLDP events to register links
+
 class State(object):
     def __init__(self):
-        self.nextbox_url = "http://localhost:8000"
-        self.netbox_token = "x"
+        self.nextbox_url = "http://172.20.20.1:8000"
+        self.netbox_user = "admin"
+        self.netbox_password = "admin"
+        self.netbox_token = ""
+        self._determine_role()
 
     def __str__(self):
         return str(self.__class__) + ": " + str(self.__dict__)
+
+    def _determine_role(self):
+       """
+       Determine this node's role and relative ID based on the hostname
+       """
+       hostname = socket.gethostname()
+       role_id = re.match( "^(\w+)[-]?(\d+).*$", hostname ) # Ignore trailing router ID, if set
+       if role_id:
+           self.role = role_id.groups()[0]
+           self.id_from_hostname = int( role_id.groups()[1] )
+           logging.info( f"_determine_role: role={self.role} id={self.id_from_hostname}" )
+       else:
+           logging.warning( f"_determine_role: Unable to determine role/id based on hostname: {hostname}, switching to 'auto' mode" )
+           self.role = "auto"
+           self.id_from_hostname = 0
 
 ##################################################################################################
 ## This is the main proc where all processing for Netbox agent starts.

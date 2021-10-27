@@ -23,13 +23,24 @@ module netbox-agent {
 
             leaf netbox-url {
               description "URL for Netbox server";
-              mandatory true;
               type string;
+              default "http://172.20.20.1:8000";
+            }
+
+            leaf netbox-user {
+              description "Netbox user to authenticate as";
+              type string;
+              default "admin";
+            }
+
+            leaf netbox-password {
+              description "Netbox password to authenticate with";
+              type string;
+              default "admin";
             }
 
             leaf netbox-token {
               description "Security token to use with Netbox server";
-              mandatory true;
               type string;
             }
         }

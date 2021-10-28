@@ -129,14 +129,22 @@ def GetSystemMAC():
 def GetNetboxToken(state):
     logging.info(f"GetNetboxToken...state={state}")
     if state.netbox_token != "":
-        return state.netbox_token
-    response = requests.post(f'{state.netbox_url}/api/users/tokens/provision/',
-                             data = { "username": state.netbox_user, "password": state.netbox_password },
+       return state.netbox_token
+    try:
+      requests_log = logging.getLogger("requests.packages.urllib3")
+      requests_log.setLevel(logging.DEBUG)
+      requests_log.propagate = True
+      response = requests.post(f'{state.netbox_url}/api/users/tokens/provision/',
+                             data = { "username": state.netbox_user,
+                                      "password": state.netbox_password },
                              headers = { "Content-Type": "application/json",
                                          "Accept": "application/json" },
                              timeout = 5 )
-    logging.info(f"GetNetboxToken response:{response}")
-    return response.json()['key']
+      logging.info(f"GetNetboxToken response:{response}")
+      return response.json()['key']
+    except Exception as ex:
+      logging.error( ex )
+    return None
 
 def RegisterWithNetbox(state):
     # During system startup, wait for netns to be created

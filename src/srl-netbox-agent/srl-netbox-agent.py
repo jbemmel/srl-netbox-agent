@@ -133,7 +133,8 @@ def GetNetboxToken(state):
     response = requests.post(f'{state.netbox_url}/api/users/tokens/provision/',
                              data = { "username": state.netbox_user, "password": state.netbox_password },
                              headers = { "Content-Type": "application/json",
-                                         "Accept": "application/json" } )
+                                         "Accept": "application/json" },
+                             timeout = 5 )
     logging.info(f"GetNetboxToken response:{response}")
     return response.json()['key']
 

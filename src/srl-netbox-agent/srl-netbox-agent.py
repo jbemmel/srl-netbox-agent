@@ -135,12 +135,11 @@ def GetNetboxToken(state):
       requests_log.setLevel(logging.DEBUG)
       requests_log.propagate = True
       response = requests.post(f'{state.netbox_url}/api/users/tokens/provision/',
-                             data = { "username": state.netbox_user,
+                               json={ "username": state.netbox_user,
                                       "password": state.netbox_password },
-                             headers = { "Content-Type": "application/json",
-                                         "Accept": "application/json" },
-                             timeout = 5 )
+                               timeout=5 )
       logging.info(f"GetNetboxToken response:{response}")
+      response.raise_for_status() # Throw exception if error
       return response.json()['key']
     except Exception as ex:
       logging.error( ex )

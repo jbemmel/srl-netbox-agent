@@ -1,11 +1,10 @@
-# See example_config.yml for an explanation of all the accepted fields
 netbox_agent:
    path: /opt/demo-agents/srl-netbox-agent/
    launch-command: /opt/demo-agents/srl-netbox-agent/scripts/srl-netbox-agent.sh
    launch-by-request: true
    launch-in-net-namespace: true # mgmt namespace
    search-command: python3 /opt/demo-agents/srl-netbox-agent/srl-netbox-agent.py
-   wait-for-config: Yes
+   # wait-for-config: Yes
    failure-threshold: 3
    failure-action: wait=forever
    author: 'Nokia'

@@ -156,7 +156,7 @@ def RegisterWithNetbox(state):
 
 class State(object):
     def __init__(self):
-        self.nextbox_url = "http://172.20.20.1:8000"
+        self.netbox_url = "http://172.20.20.1:8000"
         self.netbox_user = "admin"
         self.netbox_password = "admin"
         self.netbox_token = ""

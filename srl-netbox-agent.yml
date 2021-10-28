@@ -1,6 +1,6 @@
 netbox_agent:
    path: /opt/demo-agents/srl-netbox-agent/
-   launch-command: ip netns exec srbase-mgmt /opt/demo-agents/srl-netbox-agent/scripts/srl-netbox-agent.sh
+   launch-command: /opt/demo-agents/srl-netbox-agent/scripts/srl-netbox-agent.sh
    # launch-by-request: true
    # launch-in-net-namespace: true # mgmt namespace
    search-command: python3 /opt/demo-agents/srl-netbox-agent/srl-netbox-agent.py

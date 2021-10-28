@@ -3,7 +3,7 @@
 
 import grpc
 from datetime import datetime, timezone
-import sys, netns
+import sys, netns, time
 import logging
 import socket
 import os, re
@@ -133,6 +133,10 @@ def GetNetboxToken(state):
     return response.json()['key']
 
 def RegisterWithNetbox(state):
+    # During system startup, wait for netns to be created
+    while not os.path.exists('/var/run/netns/srbase-mgmt'):
+       logging.info("Waiting for srbase-default netns to be created...")
+       time.sleep(1)
     with netns.NetNS(nsname="srbase-mgmt"):
       nb = pynetbox.api( url=state.netbox_url, token=GetNetboxToken(state) )
       # if ssl_verify is False:

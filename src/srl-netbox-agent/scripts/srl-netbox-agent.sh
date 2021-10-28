@@ -32,11 +32,11 @@ function main()
     export PYTHONPATH="$P1:$P2:$NDK:$SDK2:$PYTHONPATH"
 
     # Wait for mgmt netns to be created - blocks booting?
-    until [ -f /var/run/netns/srbase-mgmt ]
-    do
-      sleep 5
-    done
-    echo "mgmt netns found - launching Netbox agent..."
+    #until [ -f /var/run/netns/srbase-mgmt ]
+    #do
+    #  sleep 5
+    #done
+    #echo "mgmt netns found - launching Netbox agent..."
 
     # Waiting for sub process doesn't work like this
     # ip netns exec srbase-mgmt python3 ${main_module} &

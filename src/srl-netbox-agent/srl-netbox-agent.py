@@ -99,7 +99,10 @@ def Handle_Notification(obj, state):
                 return True
         elif obj.config.key.js_path == ".commit.end":
            logging.info( "Connect to Netbox and commit" )
-           RegisterWithNetbox(state)
+           try:
+              RegisterWithNetbox(state)
+           except Exception as e:
+              logging.error(e)
     else:
         logging.info(f"Unexpected notification : {obj}")
 
@@ -124,12 +127,14 @@ def GetSystemMAC():
    return "0000.0000.0000"
 
 def GetNetboxToken(state):
+    logging.info(f"GetNetboxToken...state={state}")
     if state.netbox_token != "":
         return state.netbox_token
     response = requests.post(f'{state.netbox_url}/api/users/tokens/provision/',
                              data = { "username": state.netbox_user, "password": state.netbox_password },
                              headers = { "Content-Type": "application/json",
                                          "Accept": "application/json" } )
+    logging.info(f"GetNetboxToken response:{response}")
     return response.json()['key']
 
 def RegisterWithNetbox(state):
@@ -144,7 +149,7 @@ def RegisterWithNetbox(state):
       session = requests.Session()
       session.verify = False
       nb.http_session = session
-
+      logging.info("RegisterWithNetbox creating device...")
       new_chassis = nb.dcim.devices.create(
         name=socket.gethostname(),
         # See https://github.com/netbox-community/devicetype-library/blob/master/device-types/Nokia/7210-SAS-Sx.yaml

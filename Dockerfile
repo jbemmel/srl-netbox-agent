@@ -1,6 +1,6 @@
 # ARG SR_LINUX_RELEASE
 # FROM srl/custombase:$SR_LINUX_RELEASE AS final
-FROM srl/evpn_proxy_with_auto_agent_v2:latest
+FROM srl/auto-config-v2:latest
 
 RUN sudo pip3 install requests urllib3 pynetbox
 

@@ -31,14 +31,15 @@ function main()
     SDK2="/usr/lib/python3.6/site-packages/sdk_protos"
     export PYTHONPATH="$P1:$P2:$NDK:$SDK2:$PYTHONPATH"
 
-    # Wait for mgmt netns to be created
-    until [ -f /var/run/netns/srbase-mgmt ]
-    do
-         sleep 5
-    done
-    echo "mgmt netns found - launching Netbox agent..."
+    # Wait for mgmt netns to be created - waiting for proc doesn't work
+    #until [ -f /var/run/netns/srbase-mgmt ]
+    #do
+    #     sleep 5
+    #done
+    #echo "mgmt netns found - launching Netbox agent..."
 
-    ip netns exec srbase-mgmt python3 ${main_module} &
+    # ip netns exec srbase-mgmt python3 ${main_module} &
+    python3 ${main_module} &
 
     child=$!
     wait "$child"

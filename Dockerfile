@@ -2,7 +2,7 @@
 # FROM srl/custombase:$SR_LINUX_RELEASE AS final
 FROM srl/auto-config-v2:latest
 
-RUN sudo pip3 install requests urllib3 pynetbox
+RUN sudo pip3 install requests urllib3 pynetbox netns
 
 RUN sudo mkdir --mode=0755 -p /etc/opt/srlinux/appmgr/
 COPY --chown=srlinux:srlinux ./srl-netbox-agent.yml /etc/opt/srlinux/appmgr

@@ -3,7 +3,7 @@
 
 import grpc
 from datetime import datetime, timezone
-import sys
+import sys, netns
 import logging
 import socket
 import os, re
@@ -133,25 +133,25 @@ def GetNetboxToken(state):
     return response.json()['key']
 
 def RegisterWithNetbox(state):
-    nb = pynetbox.api( url=state.netbox_url, token=GetNetboxToken(state) )
-    # if ssl_verify is False:
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    session = requests.Session()
-    session.verify = False
-    nb.http_session = session
+    with netns.NetNS(nsname="srbase-mgmt"):
+      nb = pynetbox.api( url=state.netbox_url, token=GetNetboxToken(state) )
+      # if ssl_verify is False:
+      urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+      session = requests.Session()
+      session.verify = False
+      nb.http_session = session
 
-    new_chassis = nb.dcim.devices.create(
-      name=socket.gethostname(),
-      # See https://github.com/netbox-community/devicetype-library/blob/master/device-types/Nokia/7210-SAS-Sx.yaml
-      device_type="7210 SAS-Sx 10/100GE",  # Needs to exist in Netbox
-      serial=GetSystemMAC(),
-      device_role=state.role,
-      site=None,
-      tenant=None,
-      rack=None,
-      tags=[],
-    )
-
+      new_chassis = nb.dcim.devices.create(
+        name=socket.gethostname(),
+        # See https://github.com/netbox-community/devicetype-library/blob/master/device-types/Nokia/7210-SAS-Sx.yaml
+        device_type="7210 SAS-Sx 10/100GE",  # Needs to exist in Netbox
+        serial=GetSystemMAC(),
+        device_role=state.role,
+        site=None,
+        tenant=None,
+        rack=None,
+        tags=[],
+      )
     # TODO use LLDP events to register links
 
 class State(object):

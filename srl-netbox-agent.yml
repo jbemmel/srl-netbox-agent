@@ -2,6 +2,7 @@
 netbox_agent:
    path: /opt/demo-agents/srl-netbox-agent/
    launch-command: /opt/demo-agents/srl-netbox-agent/scripts/srl-netbox-agent.sh
+   launch-in-net-namespace: true # mgmt namespace
    search-command: python3 /opt/demo-agents/srl-netbox-agent/srl-netbox-agent.py
    wait-for-config: Yes
    failure-threshold: 3
@@ -9,7 +10,7 @@ netbox_agent:
    author: 'Nokia'
    version-command: ' cat build_version'
    yang-modules:
-       names:
-           - "srl-netbox-agent"
-       source-directories:
-           - "/opt/demo-agents/srl-netbox-agent/models/"
+    names:
+    - "srl-netbox-agent"
+    source-directories:
+    - "/opt/demo-agents/srl-netbox-agent/models/"

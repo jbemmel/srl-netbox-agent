@@ -190,7 +190,7 @@ def RegisterWithNetbox(state):
       site = nb.dcim.sites.get(slug=device_site) # TODO create if not exists
       role = nb.dcim.device_roles.get(slug=state.role)
       dev_type = nb.dcim.device_types.get(slug=type_slug) # read from gNMI
-
+      logging.info( f"Site {site} Role {role} Type {dev_type}" )
       new_chassis = nb.dcim.devices.create(
         name=device_name,
         # See https://github.com/netbox-community/devicetype-library/blob/master/device-types/Nokia/7210-SAS-Sx.yaml

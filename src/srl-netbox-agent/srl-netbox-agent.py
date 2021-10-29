@@ -168,10 +168,14 @@ def GetNetboxToken(state):
     return None
 
 def RegisterWithNetbox(state):
+
+    def to_slug(s):
+        return s.lower().replace(' ', '_')
+
     # During system startup, wait for netns to be created
     while not os.path.exists('/var/run/netns/srbase-mgmt'):
        logging.info("Waiting for srbase-default netns to be created...")
-       time.sleep(1)
+       time.sleep(2) # 1 second is not enough
     with netns.NetNS(nsname="srbase-mgmt"):
       nb = pynetbox.api( url=state.netbox_url, token=GetNetboxToken(state) )
       nb.http_session = http
@@ -186,9 +190,15 @@ def RegisterWithNetbox(state):
           device_site = "undefined"
 
       mac, type = GetPlatformDetails()
-      type_slug = type.lower().replace(' ', '_')
-      site = nb.dcim.sites.get(slug=device_site) # TODO create if not exists
-      role = nb.dcim.device_roles.get(slug=state.role)
+      type_slug = to_slug( type )
+      site = nb.dcim.sites.get(slug=to_slug(device_site))
+      if not site:
+          site = nb.dcim.sites.create({ 'name': device_site, 'slug': to_slug(device_site) })
+
+      role = nb.dcim.device_roles.get(slug=to_slug(state.role))
+      if not role:
+          role = nb.dcim.device_roles.create({ 'name': state.role, 'slug': to_slug(state.role) })
+
       dev_type = nb.dcim.device_types.get(slug=type_slug) # read from gNMI
       logging.info( f"Site {site} Role {role} Type {dev_type}" )
       new_chassis = nb.dcim.devices.create(

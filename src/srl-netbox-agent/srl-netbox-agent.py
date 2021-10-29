@@ -26,6 +26,24 @@ from logging.handlers import RotatingFileHandler
 ############################################################
 agent_name='netbox_agent'
 
+####
+# Set global HTTP retry strategy
+####
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+
+retry_strategy = Retry(
+    total=3,backoff_factor=1,
+    status_forcelist=[429, 500, 502, 503, 504],
+    method_whitelist=["HEAD", "GET", "OPTIONS", "POST"]
+)
+adapter = HTTPAdapter(max_retries=retry_strategy)
+http = requests.Session()
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+http.verify = False  # Disable SSL verify
+http.mount("https://", adapter)
+http.mount("http://", adapter)
+
 ############################################################
 ## Open a GRPC channel to connect to sdk_mgr on the dut
 ## sdk_mgr will be listening on 50053
@@ -134,10 +152,11 @@ def GetNetboxToken(state):
       requests_log = logging.getLogger("requests.packages.urllib3")
       requests_log.setLevel(logging.DEBUG)
       requests_log.propagate = True
-      response = requests.post(f'{state.netbox_url}/api/users/tokens/provision/',
-                               json={ "username": state.netbox_user,
-                                      "password": state.netbox_password },
-                               timeout=5 )
+      # May fail during bootstrap, now set auto-retry with back-off
+      response = http.post(f'{state.netbox_url}/api/users/tokens/provision/',
+                           json={ "username": state.netbox_user,
+                                  "password": state.netbox_password },
+                           timeout=5 )
       logging.info(f"GetNetboxToken response:{response}")
       response.raise_for_status() # Throw exception if error
       return response.json()['key']
@@ -152,19 +171,23 @@ def RegisterWithNetbox(state):
        time.sleep(1)
     with netns.NetNS(nsname="srbase-mgmt"):
       nb = pynetbox.api( url=state.netbox_url, token=GetNetboxToken(state) )
-      # if ssl_verify is False:
-      urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-      session = requests.Session()
-      session.verify = False
-      nb.http_session = session
-      logging.info("RegisterWithNetbox creating device...")
+      nb.http_session = http
+      hostname = socket.gethostname()
+      logging.info( f"RegisterWithNetbox creating device...{hostname}")
+      host_site = re.match( "^(\S+)[.](.*)$", hostname )
+      if host_site:
+          device_name = host_site.groups()[0]
+          device_site = host_site.groups()[1]
+      else:
+          device_name = hostname
+          device_site = "undefined"
       new_chassis = nb.dcim.devices.create(
-        name=socket.gethostname(),
+        name=device_name,
         # See https://github.com/netbox-community/devicetype-library/blob/master/device-types/Nokia/7210-SAS-Sx.yaml
-        device_type="7210 SAS-Sx 10/100GE",  # Needs to exist in Netbox
+        device_type="7220-ixr-d1-10-100GE",  # Slug, needs to exist in Netbox
         serial=GetSystemMAC(),
-        device_role=state.role,
-        site=None,
+        device_role=state.role,     # Needs to exist
+        site=device_site,           # Cannot be NULL
         tenant=None,
         rack=None,
         tags=[],

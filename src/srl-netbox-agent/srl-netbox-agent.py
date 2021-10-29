@@ -139,10 +139,11 @@ def GetPlatformDetails():
       for e in result['notification']:
          if 'update' in e:
            logging.info(f"GetPlatformDetails GOT Update :: {e['update']}")
-           mac = e['update'][0]['mac-address']['val'] # aa:bb:cc:dd:ee:ff
-           type = e['update'][0]['type']['val'] # e.g. 7220 IXR-D2
-           # Also has serial-number, but not unique for cSRL
-           return mac, type
+           vals = e['update'][0]['val']
+           # 'mac-address' : aa:bb:cc:dd:ee:ff
+           # 'type' : e.g. 7220 IXR-D2
+           # Also has 'serial-number', but not unique for cSRL
+           return vals['mac-address'], vals['type']
 
    return None, None
 

@@ -128,21 +128,23 @@ def Handle_Notification(obj, state):
     return False
 
 #
-# Uses gNMI to get /platform/chassis/mac-address and format as hhhh.hhhh.hhhh
+# Uses gNMI to get /platform/chassis details
 #
-def GetSystemMAC():
-   path = '/platform/chassis/mac-address'
+def GetPlatformDetails():
+   path = '/platform/chassis' # /mac-address
    with gNMIclient(target=('unix:///opt/srlinux/var/run/sr_gnmi_server',57400),
                             username="admin",password="admin",
                             insecure=True, debug=False) as gnmi:
       result = gnmi.get( encoding='json_ietf', path=[path] )
       for e in result['notification']:
          if 'update' in e:
-           logging.info(f"GetSystemMAC GOT Update :: {e['update']}")
-           m = e['update'][0]['val'] # aa:bb:cc:dd:ee:ff
-           return f'{m[0]}{m[1]}.{m[2]}{m[3]}.{m[4]}{m[5]}'
+           logging.info(f"GetPlatformDetails GOT Update :: {e['update']}")
+           mac = e['update'][0]['mac-address']['val'] # aa:bb:cc:dd:ee:ff
+           type = e['update'][0]['type']['val'] # e.g. 7220 IXR-D2
+           # Also has serial-number, but not unique for cSRL
+           return mac, type
 
-   return "0000.0000.0000"
+   return None, None
 
 def GetNetboxToken(state):
     logging.info(f"GetNetboxToken...state={state}")
@@ -181,13 +183,20 @@ def RegisterWithNetbox(state):
       else:
           device_name = hostname
           device_site = "undefined"
+
+      mac, type = GetPlatformDetails()
+      type_slug = type.lower().replace(' ', '_')
+      site = nb.dcim.sites.get(slug=device_site) # TODO create if not exists
+      role = nb.dcim.device_roles.get(slug=state.role)
+      dev_type = nb.dcim.device_types.get(slug=type_slug) # read from gNMI
+
       new_chassis = nb.dcim.devices.create(
         name=device_name,
         # See https://github.com/netbox-community/devicetype-library/blob/master/device-types/Nokia/7210-SAS-Sx.yaml
-        device_type="7220-ixr-d1-10-100GE",  # Slug, needs to exist in Netbox
-        serial=GetSystemMAC(),
-        device_role=state.role,     # Needs to exist
-        site=device_site,           # Cannot be NULL
+        device_type=dev_type.id,
+        serial=mac,
+        device_role=role.id,
+        site=site.id, # Cannot be None
         tenant=None,
         rack=None,
         tags=[],

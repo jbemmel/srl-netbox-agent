@@ -209,6 +209,8 @@ def RegisterWithNetbox(state):
       ip = nb.ipam.ip_addresses.get(address=mgmt_ipv4)
       if not ip:
           ip = nb.ipam.ip_addresses.create(address=mgmt_ipv4,dns_name=hostname)
+      else:
+          ip.patch( dns_name=hostname )
 
       logging.info( f"Site {site} Role {role} Type {dev_type} IP {ip}" )
       new_chassis = nb.dcim.devices.create(
@@ -222,8 +224,14 @@ def RegisterWithNetbox(state):
         tenant=None,
         rack=None,
         tags=[],
-        primary_ip4=ip.id,
       )
+
+      logging.info( f"Device created: {new_chassis}" )
+      # Now assign the IP to the mgmt interface
+      mgmt = nb.dcim.interfaces.get(name='mgmt', device=device_name)
+      ip.assigned_object_id = mgmt.id
+      ip.save()
+
     # TODO use LLDP events to register links
 
 class State(object):

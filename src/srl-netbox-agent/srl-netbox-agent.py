@@ -137,15 +137,14 @@ def GetPlatformDetails():
                             username="admin",password="admin",
                             insecure=True, debug=False) as gnmi:
       result = gnmi.get( encoding='json_ietf', path=paths )
-      for e in result['notification']:
-         if 'update' in e:
-           logging.info(f"GetPlatformDetails GOT Update :: {e['update']}")
-           p1 = e['update'][0]['val']
-           p2 = e['update'][1]['val']
-           # 'mac-address' : aa:bb:cc:dd:ee:ff
-           # 'type' : e.g. 7220 IXR-D2
-           # Also has 'serial-number', but not unique for cSRL
-           return p1['mac-address'], p1['type'], p2[0]['ip-prefix']
+      logging.info(f"GetPlatformDetails GOT result :: {result}")
+      p1 = result['notification'][0]['update'][0]['val']
+      p2 = result['notification'][1]['update'][0]['val']
+
+      # 'mac-address' : aa:bb:cc:dd:ee:ff
+      # 'type' : e.g. 7220 IXR-D2
+      # Also has 'serial-number', but not unique for cSRL
+      return p1['mac-address'], p1['type'], p2[0]['ip-prefix']
 
    return None, None, None
 

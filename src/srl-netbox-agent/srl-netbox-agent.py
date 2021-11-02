@@ -211,18 +211,20 @@ def RegisterWithNetbox(state):
           ip = nb.ipam.ip_addresses.create(address=mgmt_ipv4,dns_name=hostname)
 
       logging.info( f"Site {site} Role {role} Type {dev_type} IP {ip}" )
-      new_chassis = nb.dcim.devices.create(
-        name=device_name,
-        # See https://github.com/netbox-community/devicetype-library/blob/master/device-types/Nokia/7210-SAS-Sx.yaml
-        device_type=dev_type.id,
-        serial=mac,
-        device_role=role.id,
-        site=site.id, # Cannot be None
-        platform=platform.id, # Optional, used for NAPALM driver too
-        tenant=None,
-        rack=None,
-        tags=[],
-      )
+      new_chassis = nb.dcim.devices.get( name=device_name )
+      if not new_chassis:
+         new_chassis = nb.dcim.devices.create(
+           name=device_name,
+           # See https://github.com/netbox-community/devicetype-library/blob/master/device-types/Nokia/7210-SAS-Sx.yaml
+           device_type=dev_type.id,
+           serial=mac,
+           device_role=role.id,
+           site=site.id, # Cannot be None
+           platform=platform.id, # Optional, used for NAPALM driver too
+           tenant=None,
+           rack=None,
+           tags=[],
+         )
 
       logging.info( f"Device created: {new_chassis}" )
       # Now assign the IP to the mgmt interface

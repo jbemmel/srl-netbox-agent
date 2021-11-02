@@ -200,7 +200,7 @@ def RegisterWithNetbox(state):
       if not platform:
           # XXX TODO SRLinux specific NAPALM driver
           # XXX manufacturer must probably be an ID too
-          platform = nb.dcim.platforms.create( { 'name': 'SR Linux', 'slug': 'srlinux', 'manufacturer': dev_type.manufacturer, 'napalm_driver': 'sros' } )
+          platform = nb.dcim.platforms.create( { 'name': 'SR Linux', 'slug': 'srlinux', 'manufacturer': dev_type.manufacturer.id, 'napalm_driver': 'sros' } )
 
       role = nb.dcim.device_roles.get(slug=to_slug(state.role))
       if not role:

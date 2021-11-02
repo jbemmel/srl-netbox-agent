@@ -136,7 +136,7 @@ def GetPlatformDetails():
    with gNMIclient(target=('unix:///opt/srlinux/var/run/sr_gnmi_server',57400),
                             username="admin",password="admin",
                             insecure=True, debug=False) as gnmi:
-      result = gnmi.get( encoding='json_ietf', path=[paths] )
+      result = gnmi.get( encoding='json_ietf', path=paths )
       for e in result['notification']:
          if 'update' in e:
            logging.info(f"GetPlatformDetails GOT Update :: {e['update']}")

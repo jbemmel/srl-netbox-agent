@@ -206,7 +206,11 @@ def RegisterWithNetbox(state):
       if not role:
           role = nb.dcim.device_roles.create({ 'name': state.role, 'slug': to_slug(state.role) })
 
-      logging.info( f"Site {site} Role {role} Type {dev_type}" )
+      ip = nb.ipam.ip_addresses.get(address=mgmt_ipv4)
+      if not ip:
+          ip = nb.ipam.ip_addresses.create(address=mgmt_ipv4,dns_name=hostname)
+
+      logging.info( f"Site {site} Role {role} Type {dev_type} IP {ip}" )
       new_chassis = nb.dcim.devices.create(
         name=device_name,
         # See https://github.com/netbox-community/devicetype-library/blob/master/device-types/Nokia/7210-SAS-Sx.yaml
@@ -218,7 +222,7 @@ def RegisterWithNetbox(state):
         tenant=None,
         rack=None,
         tags=[],
-        primary_ip4=mgmt_ipv4
+        primary_ip4=ip.id,
       )
     # TODO use LLDP events to register links
 

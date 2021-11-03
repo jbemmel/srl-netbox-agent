@@ -191,7 +191,9 @@ def RegisterWithNetbox(state):
           device_site = "undefined"
 
       mac, type, mgmt_ipv4 = GetPlatformDetails()
-      type_slug = to_slug( type )
+      type_slug = {
+        "XXX": "7750-sr-1s-ac-12c"
+      }["XXX"] # TODO [type]
       dev_type = nb.dcim.device_types.get(slug=type_slug) # read from gNMI
       site = nb.dcim.sites.get(slug=to_slug(device_site))
       if not site:
@@ -199,7 +201,8 @@ def RegisterWithNetbox(state):
       platform = nb.dcim.platforms.get(slug='srlinux')
       if not platform:
           # Uses SRLinux specific NAPALM driver: https://github.com/napalm-automation-community/napalm-srlinux
-          platform = nb.dcim.platforms.create( { 'name': 'SR Linux', 'slug': 'srlinux', 'manufacturer': dev_type.manufacturer.id, 'napalm_driver': 'srl' } )
+          platform = nb.dcim.platforms.create( { 'name': 'SR Linux', 'slug': 'srlinux', 'manufacturer': dev_type.manufacturer.id,
+                        'napalm_driver': 'srl', 'napalm_args': { 'insecure': True, 'skip_verify': True } } )
 
       role = nb.dcim.device_roles.get(slug=to_slug(state.role))
       if not role:

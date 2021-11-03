@@ -228,7 +228,7 @@ def RegisterWithNetbox(state):
 
       logging.info( f"Device created: {new_chassis}" )
       # Now assign the IP to the mgmt interface
-      mgmt = nb.dcim.interfaces.get(name='mgmt', device=device_name)
+      mgmt = nb.dcim.interfaces.get(name='mgmt0', device=device_name)
       logging.info( f"mgmt interface: {mgmt}")
       # ip.assigned_object_id = mgmt.id
       # ip.assigned_object_type = mgmt.type

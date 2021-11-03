@@ -192,8 +192,8 @@ def RegisterWithNetbox(state):
 
       mac, type, mgmt_ipv4 = GetPlatformDetails()
       type_slug = {
-        "XXX": "7750-sr-1s-ac-12c"
-      }["XXX"] # TODO [type]
+        "7220 IXR-D2": "7220_ixr-d2-ac-12c"
+      }[type] if False else to_slug(type)
       dev_type = nb.dcim.device_types.get(slug=type_slug) # read from gNMI
       site = nb.dcim.sites.get(slug=to_slug(device_site))
       if not site:

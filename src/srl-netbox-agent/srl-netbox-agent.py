@@ -195,6 +195,16 @@ def RegisterWithNetbox(state):
         "7220 IXR-D2": "7220_ixr-d2-ac-12c"
       }[type] if False else to_slug(type)
       dev_type = nb.dcim.device_types.get(slug=type_slug) # read from gNMI
+      if not dev_type:
+          nokia = nb.dcim.manufacturers.get(slug='nokia')
+          if not nokia:
+             nokia = nb.dcim.manufacturers.create({'name': "Nokia", 'slug': "nokia"})
+          dev = {
+           'model': type,
+           'slug': type_slug,
+           'manufacturer': nokia.id,
+          }
+          dev_type = nb.dcim.device_types.create(dev)
       site = nb.dcim.sites.get(slug=to_slug(device_site))
       if not site:
           site = nb.dcim.sites.create({ 'name': device_site, 'slug': to_slug(device_site) })
@@ -230,15 +240,18 @@ def RegisterWithNetbox(state):
 
       logging.info( f"Device created: {new_chassis}" )
       # Now assign the IP to the mgmt interface
-      mgmt = nb.dcim.interfaces.get(name='mgmt0', device=device_name)
+      mgmt = nb.dcim.interfaces.get(name='A/1', device=device_name)
       logging.info( f"mgmt interface: {mgmt}")
-      # ip.assigned_object_id = mgmt.id
-      # ip.assigned_object_type = mgmt.type
-      ip.device = new_chassis.id
-      ip.interface = mgmt.id
-      ip.primary_for_parent = True
+      # ip.device = new_chassis.id
+      # ip.interface = mgmt.id
+      # ip.primary_for_parent = True
+      ip.assigned_object_id = mgmt.id
+      ip.assigned_object_type = "dcim.interface"
       ip.dns_name = hostname
       ip.save()
+
+      new_chassis.primary_ip = new_chassis.primary_ip4 = ip
+      new_chassis.save()
 
     # TODO use LLDP events to register links
 

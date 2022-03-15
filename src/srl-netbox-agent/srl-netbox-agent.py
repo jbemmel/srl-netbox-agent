@@ -214,7 +214,7 @@ def RegisterWithNetbox(state):
       if not platform:
           # Uses SRLinux specific NAPALM driver: https://github.com/napalm-automation-community/napalm-srlinux
           platform = nb.dcim.platforms.create( { 'name': 'SR Linux', 'slug': 'srlinux', 'manufacturer': dev_type.manufacturer.id,
-                        'napalm_driver': 'srl', 'napalm_args': { 'insecure': True } } ) # skip_verify not used
+                        'napalm_driver': 'srl', 'napalm_args': { 'insecure': False } } ) # skip_verify not used
 
       role = nb.dcim.device_roles.get(slug=to_slug(state.role))
       if not role:

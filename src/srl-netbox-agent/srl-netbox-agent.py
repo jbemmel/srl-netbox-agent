@@ -141,10 +141,10 @@ def GetPlatformDetails():
       p1 = result['notification'][0]['update'][0]['val']
       p2 = result['notification'][1]['update'][0]['val']['address'][0]
 
-      # 'mac-address' : aa:bb:cc:dd:ee:ff
+      # 'mac-address' : aa:bb:cc:dd:ee:ff (changed to 'hw-mac-address' in 21.11)
       # 'type' : e.g. 7220 IXR-D2
       # Also has 'serial-number', but not unique for cSRL
-      return p1['mac-address'], p1['type'], p2['ip-prefix']
+      return p1['hw-mac-address'], p1['type'], p2['ip-prefix']
 
    return None, None, None
 

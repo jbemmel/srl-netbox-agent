@@ -9,7 +9,7 @@ netbox_agent:
    failure-threshold: 3
    failure-action: wait=forever
    author: 'Nokia'
-   version-command: ' cat build_version'
+   version-command: ' echo 0.1'
    yang-modules:
     names:
     - "srl-netbox-agent"

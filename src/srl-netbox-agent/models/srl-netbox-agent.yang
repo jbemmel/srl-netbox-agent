@@ -21,6 +21,14 @@ module netbox-agent {
             description "Top level enclosing container for netbox agent sample app
                          config and operational state data";
 
+            leaf admin-state {
+              type enumeration {
+               enum enable;
+               enum disable;
+              }
+              mandatory true;
+            }
+
             leaf netbox-url {
               description "URL for Netbox server";
               type string;

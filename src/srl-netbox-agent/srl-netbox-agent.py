@@ -1,17 +1,20 @@
 #!/usr/bin/env python
-# coding=utf-8
 
+import sys
+import netns
+import time
 import grpc
-from datetime import datetime, timezone
-import sys, netns, time
+from datetime import datetime
 import logging
 import socket
-import os, re
+import os
+import re
 import signal
-import traceback
 import json
 
-import requests, urllib3, pynetbox
+import requests
+import urllib3
+import pynetbox
 
 import sdk_service_pb2
 import sdk_service_pb2_grpc
@@ -21,6 +24,9 @@ from pygnmi.client import gNMIclient
 
 from logging.handlers import RotatingFileHandler
 
+from requests.adapters import HTTPAdapter
+from urllib3.util import Retry
+
 ############################################################
 ## Agent will start with this name
 ############################################################
@@ -29,8 +35,6 @@ agent_name='netbox_agent'
 ####
 # Set global HTTP retry strategy
 ####
-from requests.adapters import HTTPAdapter
-from urllib3.util import Retry
 
 retry_strategy = Retry(
     total=3,backoff_factor=1,
@@ -97,7 +101,7 @@ def Handle_Notification(obj, state):
             logging.info(f"Got config for agent, now will handle it :: \n{obj.config}\
                             Operation :: {obj.config.op}\nData :: {obj.config.data.json}")
             if obj.config.op == 2:
-                logging.info(f"Delete netbox-agent cli scenario")
+                logging.info("Delete netbox-agent cli scenario")
                 response=stub.AgentUnRegister(request=sdk_service_pb2.AgentRegistrationRequest(), metadata=metadata)
                 logging.info( f'Handle_Config: Unregister response:: {response}' )
                 state = State() # Reset state, works?

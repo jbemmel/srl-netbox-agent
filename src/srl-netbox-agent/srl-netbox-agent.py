@@ -108,14 +108,17 @@ def Handle_Notification(obj, state):
 
                 if 'netbox_url' in data:
                    state.netbox_url = data['netbox_url']['value']
+                   logging.info(f"Updated Netbox URL: {state.netbox_url}")
                 if 'netbox_token' in data:
                    state.netbox_token = data['netbox_token']['value']
                 if 'netbox_user' in data:
                    state.netbox_user = data['netbox_user']['value']
                 if 'netbox_password' in data:
                    state.netbox_password = data['netbox_password']['value']
+                if 'admin_state' in data:
+                   state.admin_state = data['admin_state'][12:] == "enable"
                 return True
-        elif obj.config.key.js_path == ".commit.end":
+        elif obj.config.key.js_path == ".commit.end" and state.admin_state:
            logging.info( "Connect to Netbox and commit" )
            try:
               RegisterWithNetbox(state)
@@ -192,8 +195,12 @@ def RegisterWithNetbox(state):
 
       mac, type, mgmt_ipv4 = GetPlatformDetails()
       MAPPING = {
-        "7220 IXR-D2": "7220_ixr-d2-ac-12c",
-        "7250 IXR-6": "7250-ixr-6-10-100GE",
+        "7220 IXR-D1": "nokia-7220-ixr-d1",
+        "7220 IXR-D2": "nokia-7220-ixr-d2",
+        "7220 IXR-D2L": "nokia-7220-ixr-d2l",
+        "7220 IXR-D3": "nokia-7220-ixr-d3",
+        "7220 IXR-D3L": "nokia-7220-ixr-d3l",
+        "7220 IXR-H3": "nokia-7220-ixr-h3",
       }
       type_slug = MAPPING[type] if type in MAPPING else to_slug(type)
       dev_type = nb.dcim.device_types.get(slug=type_slug) # read from gNMI
@@ -224,7 +231,7 @@ def RegisterWithNetbox(state):
       if not ip:
           ip = nb.ipam.ip_addresses.create(address=mgmt_ipv4,dns_name=hostname)
 
-      logging.info( f"Site {site} Role {role} Type {dev_type} IP {ip}" )
+      logging.info( f"Site '{site}' Role '{role}' Type '{dev_type}' IP '{ip}'" )
       new_chassis = nb.dcim.devices.get( name=device_name )
       if not new_chassis:
          new_chassis = nb.dcim.devices.create(
@@ -260,10 +267,12 @@ def RegisterWithNetbox(state):
 
 class State(object):
     def __init__(self):
+        logging.info("State.init")
         self.netbox_url = "http://172.20.20.1:8000"
         self.netbox_user = "admin"
         self.netbox_password = "admin"
         self.netbox_token = ""
+        self.admin_state = False # disabled by default
         self._determine_role()
 
     def __str__(self):

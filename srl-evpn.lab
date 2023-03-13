@@ -22,7 +22,7 @@ topology:
   nodes:
     leaf1:  { kind: srl, group: leaves }
     leaf2:  { kind: srl, type: ixrd2l, group: leaves }
-    leaf3:  { kind: srl, group: leaves }
+    leaf3:  { kind: srl, type: ixrd1,  group: leaves }
 
     spine1: { kind: srl, type: ixrd3, group: spines }
     spine2: { kind: srl, type: ixrd3l, group: spines }

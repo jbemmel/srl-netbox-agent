@@ -139,7 +139,8 @@ def Handle_Notification(obj, state):
 #
 def GetPlatformDetails():
    paths = [ '/platform/chassis', # /mac-address
-             '/interface[name=mgmt0]/subinterface[index=0]/ipv4/address' ]
+             '/interface[name=mgmt0]/subinterface[index=0]/ipv4/address',
+             '/platform/fan-tray' ]
    with gNMIclient(target=('unix:///opt/srlinux/var/run/sr_gnmi_server',57400),
                             username="admin",password="admin",
                             insecure=True, debug=False) as gnmi:
@@ -147,13 +148,14 @@ def GetPlatformDetails():
       logging.info(f"GetPlatformDetails GOT result :: {result}")
       p1 = result['notification'][0]['update'][0]['val']
       p2 = result['notification'][1]['update'][0]['val']['address'][0]
+      fancount = len( result['notification'][2]['update'][0]['val']['srl_nokia-platform-fan:fan-tray'] )
 
       # 'mac-address' : aa:bb:cc:dd:ee:ff (changed to 'hw-mac-address' in 21.11)
       # 'type' : e.g. 7220 IXR-D2
       # Also has 'serial-number', but not unique for cSRL
-      return p1['hw-mac-address'], p1['type'], p2['ip-prefix']
+      return p1['hw-mac-address'], p1['type'], p2['ip-prefix'], fancount
 
-   return None, None, None
+   return None, None, None, 0
 
 def GetNetboxToken(state):
     logging.info(f"GetNetboxToken...state={state}")
@@ -178,7 +180,7 @@ def GetNetboxToken(state):
 def RegisterWithNetbox(state):
 
     def to_slug(s):
-        return s.lower().replace(' ', '_')
+        return s.lower().replace(' ', '-')
 
     # During system startup, wait for netns to be created
     while not os.path.exists('/var/run/netns/srbase-mgmt'):
@@ -197,16 +199,9 @@ def RegisterWithNetbox(state):
           device_name = hostname
           device_site = "undefined"
 
-      mac, type, mgmt_ipv4 = GetPlatformDetails()
-      MAPPING = {
-        "7220 IXR-D1": "nokia-7220-ixr-d1",
-        "7220 IXR-D2": "nokia-7220-ixr-d2",
-        "7220 IXR-D2L": "nokia-7220-ixr-d2l",
-        "7220 IXR-D3": "nokia-7220-ixr-d3",
-        "7220 IXR-D3L": "nokia-7220-ixr-d3l",
-        "7220 IXR-H3": "nokia-7220-ixr-h3",
-      }
-      type_slug = MAPPING[type] if type in MAPPING else to_slug(type)
+      mac, type, mgmt_ipv4, fancount = GetPlatformDetails()
+      type_slug = "nokia-" + to_slug(type)
+      logging.info( f"Type slug '{type_slug}'" )
       dev_type = nb.dcim.device_types.get(slug=type_slug) # read from gNMI
       if not dev_type:
           nokia = nb.dcim.manufacturers.get(slug='nokia')
@@ -252,8 +247,35 @@ def RegisterWithNetbox(state):
          )
 
       logging.info( f"Device created: {new_chassis}" )
+
+      # Insert modules for fans and power units
+      fan_module = f"FAN-{type.upper().replace(' ', '-')}-F2B"
+      fan_mod_type = nb.dcim.module_types.get(model=fan_module)
+
+      if "D2L" in type or "D3L" in type:
+        psu_module = "PS-7220-IXR-D2L/D3L-AC-F2B" # tricky, different conventions...
+      elif "D2" in type or "D3" in type:
+        psu_module = "PS-7220-IXR-D2/D3-AC-F2B" # tricky, different conventions...
+      else:
+        psu_module = f"PS-7220-IXR-{type.split('-')[1]}-AC-F2B"
+      psu_mod_type = nb.dcim.module_types.get(model=psu_module)
+
+      for psu in ["PS1","PS2"]: # All have 1+1 PSUs
+        module_bay = nb.dcim.module_bays.get(device=device_name,name=psu)
+        logging.info( f"PSU module_bay:{module_bay}" )
+
+        new_module = nb.dcim.modules.create(module_type=psu_mod_type.id,device=new_chassis.id,module_bay=module_bay.id)
+        logging.info( f"New PSU module inserted:{new_module}" )
+
+      for fan in range(1,fancount+1):
+        module_bay = nb.dcim.module_bays.get(device=device_name,name=f"Fan Tray {fan}")
+        logging.info( f"Fan module_bay:{module_bay}" )
+
+        new_module = nb.dcim.modules.create(module_type=fan_mod_type.id,device=new_chassis.id,module_bay=module_bay.id)
+        logging.info( f"New FAN module inserted:{new_module}" )
+
       # Now assign the IP to the mgmt interface
-      mgmt = nb.dcim.interfaces.get(name='mgmt', device=device_name)
+      mgmt = nb.dcim.interfaces.get(name='mgmt0', device=device_name)
       logging.info( f"mgmt interface: {mgmt}")
       # ip.device = new_chassis.id
       # ip.interface = mgmt.id

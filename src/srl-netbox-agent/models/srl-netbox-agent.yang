@@ -29,6 +29,22 @@ module netbox-agent {
               mandatory true;
             }
 
+            leaf airflow {
+              type enumeration {
+               enum B2F;
+               enum F2B;
+              }
+              default "F2B";
+            }
+
+            leaf power {
+              type enumeration {
+               enum AC;
+               enum DC;
+              }
+              default "AC";
+            }
+
             leaf netbox-url {
               description "URL for Netbox server";
               type string;

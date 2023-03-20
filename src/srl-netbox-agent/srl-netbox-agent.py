@@ -121,6 +121,10 @@ def Handle_Notification(obj, state):
                    state.netbox_password = data['netbox_password']['value']
                 if 'admin_state' in data:
                    state.admin_state = data['admin_state'][12:] == "enable"
+                if 'airflow' in data:
+                   state.airflow = data['airflow'][8:]
+                if 'power' in data:
+                   state.power = data['power'][6:]
                 return True
         elif obj.config.key.js_path == ".commit.end" and state.admin_state:
            logging.info( "Connect to Netbox and commit" )
@@ -149,6 +153,8 @@ def GetPlatformDetails():
       p1 = result['notification'][0]['update'][0]['val']
       p2 = result['notification'][1]['update'][0]['val']['address'][0]
       fancount = len( result['notification'][2]['update'][0]['val']['srl_nokia-platform-fan:fan-tray'] )
+
+      # Could also include /platform fan-tray x type for airflow direction
 
       # 'mac-address' : aa:bb:cc:dd:ee:ff (changed to 'hw-mac-address' in 21.11)
       # 'type' : e.g. 7220 IXR-D2
@@ -249,16 +255,23 @@ def RegisterWithNetbox(state):
       logging.info( f"Device created: {new_chassis}" )
 
       # Insert modules for fans and power units
-      fan_module = f"FAN-{type.upper().replace(' ', '-')}-F2B"
+      fan_module = f"FAN-{type.upper().replace(' ', '-')}-{state.airflow}"
       fan_mod_type = nb.dcim.module_types.get(model=fan_module)
+      if not fan_mod_type:
+          logging.error( f"FAN module not found: {fan_module}")
+          return
 
+      af_pwr = f"{state.power}-{state.airflow}" # AC/DC and F2B/B2F, configurable
       if "D2L" in type or "D3L" in type:
-        psu_module = "PS-7220-IXR-D2L/D3L-AC-F2B" # tricky, different conventions...
+        psu_module = f"PS-7220-IXR-D2L/D3L-{af_pwr}" # tricky, different conventions...
       elif "D2" in type or "D3" in type:
-        psu_module = "PS-7220-IXR-D2/D3-AC-F2B" # tricky, different conventions...
+        psu_module = f"PS-7220-IXR-D2/D3-{af_pwr}" # tricky, different conventions...
       else:
-        psu_module = f"PS-7220-IXR-{type.split('-')[1]}-AC-F2B"
+        psu_module = f"PS-7220-IXR-{type.split('-')[1]}-{af_pwr}"
       psu_mod_type = nb.dcim.module_types.get(model=psu_module)
+      if not psu_mod_type:
+          logging.error( f"PSU module not found: {psu_module}")
+          return
 
       for psu in ["PS1","PS2"]: # All have 1+1 PSUs
         module_bay = nb.dcim.module_bays.get(device=device_name,name=psu)
@@ -299,6 +312,8 @@ class State(object):
         self.netbox_password = "admin"
         self.netbox_token = ""
         self.admin_state = False # disabled by default
+        self.airflow = "F2B"
+        self.power = "AC"
         self._determine_role()
 
     def __str__(self):

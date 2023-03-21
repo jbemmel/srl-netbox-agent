@@ -247,6 +247,7 @@ def RegisterWithNetbox(state):
            device_role=role.id,
            site=site.id, # Cannot be None
            platform=platform.id, # Optional, used for NAPALM driver too
+           airflow="front-to-rear" if state.airflow=="F2B" else "rear-to-front",
            tenant=None,
            rack=None,
            tags=[],

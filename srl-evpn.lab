@@ -17,6 +17,14 @@ topology:
         SPINES: 2 # TODO subtract this from host ID
       binds:
       - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - ../srl-baseimage/eh_proxy2python.py:/etc/opt/srlinux/eventmgr/eh_proxy2python.py
+      - ../srl-baseimage/run-python-script.sh:/opt/run-python-script.sh
+      - ../srl-baseimage/splunk_notify.py:/opt/splunk_notify/splunk_notify.py
+      dns:
+        servers:
+        - 1.1.1.1
+        - 8.8.8.8
+        - 8.8.4.4
       startup-config: evpn-auto-config.cmd # Same for all leaves/spines
 
   nodes:

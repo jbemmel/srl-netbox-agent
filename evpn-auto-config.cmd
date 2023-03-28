@@ -1,3 +1,6 @@
+# Configure DNS
+set /system dns network-instance mgmt server-list [ 1.1.1.1 8.8.8.8 8.8.4.4 ]
+
 # auto-config for srl-evpn lab leaves & spines
 set /system gnmi-server unix-socket admin-state enable
 set /auto-config-agent igp bgp-unnumbered evpn model asymmetric-irb auto-lags encoded-ipv6 bgp-peering ipv4

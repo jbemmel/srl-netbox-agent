@@ -237,6 +237,11 @@ def RegisterWithNetbox(state):
           ip = nb.ipam.ip_addresses.create(address=mgmt_ipv4,dns_name=hostname)
 
       logging.info( f"Site '{site}' Role '{role}' Type '{dev_type}' IP '{ip}'" )
+
+      #
+      # TODO 2nd workflow by looking up using serial number (populated through QR code scan)
+      # then update mgmt IP
+      #
       new_chassis = nb.dcim.devices.get( name=device_name )
       if not new_chassis:
          new_chassis = nb.dcim.devices.create(
